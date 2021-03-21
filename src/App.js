@@ -1,20 +1,34 @@
-import logo from "./logo.svg";
 import React from "react";
 import "./App.css";
-import {
-  MapContainer,
-  TileLayer,
-  Polyline,
-  FeatureGroup,
-  Popup,
-  GeoJSON,
-  Tooltip,
-} from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 let EuCountriesBorders = require("./countries/european-union-countries.json");
 let densityDataJson = require("./countries/densityData.json");
-const purpleOptions = { color: "#22A7F0" };
+
+function Legend({ getColours }) {
+  let grades = [0, 10, 50, 100, 200];
+
+  return (
+    <div className="leaflet-bottom leaflet-right">
+      <div className="leaflet-control leaflet-bar">
+        <div className="info legend">
+          <p>
+            <strong>Population density</strong>
+          </p>
+          {grades.map((density) => {
+            return (
+              <div className="legend-item">
+                <i style={{ background: `${getColours(density)}` }}></i>
+                <span>{density}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const densityData =
@@ -25,6 +39,10 @@ function App() {
   EuCountriesBorders.features.map((item, index) => {
     let country = item.properties.wb_a2;
     densityData.map((densityItem) => {
+      if (densityItem["-geo"] == "EL" && country === "GR") {
+        newEuCountriesBorders.features[index].properties.density =
+          densityItem["data:Obs"][7]["-OBS_VALUE"];
+      }
       if (densityItem["-geo"] === country) {
         newEuCountriesBorders.features[index].properties.density =
           densityItem["data:Obs"][7]["-OBS_VALUE"];
@@ -55,10 +73,10 @@ function App() {
   }
 
   function onEachFeature(feature, layer) {
-    const popupContent = `
+    let popupContent = `
                          ${feature.properties.formal_en}
                          <br>Country code: ${feature.properties.adm0_a3}
-                         <br> Population per square km: ${feature.properties.density}
+                         <br> Population density per km&#178; : ${feature.properties.density}
                          <br> `;
 
     if (feature.properties && feature.properties.popupContent) {
@@ -74,7 +92,7 @@ function App() {
       <MapContainer
         center={[49.845556, 9.906111]}
         zoom={4}
-        scrollWheelZoom={true}
+        scrollWheelZoom={false}
       >
         <TileLayer
           attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -103,6 +121,7 @@ function App() {
             },
           }}
         />
+        <Legend getColours={getColours} />
       </MapContainer>
     </div>
   );
